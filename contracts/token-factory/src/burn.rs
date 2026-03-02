@@ -27,6 +27,7 @@ pub fn burn(env: &Env, caller: Address, token_index: u32, amount: i128) -> Resul
     info.total_supply = new_supply;
     storage::set_token_info(env, token_index, &info);
     storage::increment_burn_count(env, token_index);
+    storage::add_total_burned(env, token_index, amount);
 
     emit_burn_event(env, token_index, &caller, amount, new_supply);
     Ok(())
@@ -68,6 +69,7 @@ pub fn admin_burn(
     info.total_supply = new_supply;
     storage::set_token_info(env, token_index, &info);
     storage::increment_burn_count(env, token_index);
+    storage::add_total_burned(env, token_index, amount);
 
     emit_admin_burn_event(env, token_index, &admin, &holder, amount, new_supply);
     Ok(())
@@ -130,6 +132,7 @@ pub fn batch_burn(
     info.total_supply = new_supply;
     storage::set_token_info(env, token_index, &info);
     storage::increment_burn_count(env, token_index);
+    storage::add_total_burned(env, token_index, total_burn);
 
     emit_batch_burn_event(env, token_index, &admin, burns.len(), total_burn, new_supply);
     Ok(())

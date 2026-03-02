@@ -5,7 +5,8 @@ mod burn;
 mod types;
 
 use soroban_sdk::{contract, contractimpl, Address, Env};
-use types::{Error, FactoryState, TokenInfo};
+use types::{Error, FactoryState, TokenInfo, TokenStats};
+
 
 #[contract]
 pub struct TokenFactory;
@@ -190,6 +191,20 @@ impl TokenFactory {
         storage::is_token_paused(&env, token_index)
     }
 
+    /// Return a compact stats snapshot for a token
+    pub fn get_token_stats(env: Env, token_index: u32) -> Result<TokenStats, Error> {
+        storage::get_token_info(&env, token_index).ok_or(Error::TokenNotFound)?;
+
+        Ok(TokenStats {
+            current_supply: storage::get_token_info(&env, token_index)
+                .map(|i| i.total_supply)
+                .unwrap_or(0),
+            total_burned:   storage::get_total_burned(&env, token_index),
+            burn_count:     storage::get_burn_count(&env, token_index),
+            is_paused:      storage::is_token_paused(&env, token_index),
+            has_clawback:   false,
+        })
+    }
 }
 
 #[cfg(test)]
@@ -221,4 +236,8 @@ mod token_registry_test;
 
 #[cfg(test)]
 mod token_pause_test;
+
+
+#[cfg(test)]
+mod token_stats_test;
 

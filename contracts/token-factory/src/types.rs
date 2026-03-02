@@ -22,7 +22,19 @@ pub struct TokenInfo {
     pub total_supply: i128,
     pub metadata_uri: Option<String>,
     pub created_at: u64,
-    pub is_paused: bool,   // NEW — token-level pause flag
+    pub is_paused: bool,
+}
+
+/// Compact read-only snapshot of a token's current state.
+/// Returned by get_token_stats().
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TokenStats {
+    pub current_supply: i128,  // live circulating supply
+    pub total_burned:   i128,  // cumulative amount burned since creation
+    pub burn_count:     u32,   // number of burn operations performed
+    pub is_paused:      bool,  // token-level pause flag
+    pub has_clawback:   bool,  // clawback policy flag (reserved; always false for now)
 }
 
 #[contracttype]
@@ -36,7 +48,8 @@ pub enum DataKey {
     Token(u32),
     Balance(u32, Address),
     BurnCount(u32),
-    TokenPaused(u32),      // NEW — token_index -> bool
+    TokenPaused(u32),
+    TotalBurned(u32),   // NEW — cumulative burned amount per token
 }
 
 #[contracterror]
@@ -51,5 +64,6 @@ pub enum Error {
     InsufficientBalance = 7,
     ArithmeticError     = 8,
     BatchTooLarge       = 9,
-    TokenPaused         = 10,  // NEW
+    TokenPaused         = 10,
 }
+
