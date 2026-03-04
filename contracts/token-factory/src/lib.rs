@@ -639,9 +639,6 @@ impl TokenFactory {
             return Err(Error::InsufficientFee);
         }
 
-        // Accrue fee
-        storage::add_accrued_fees(&env, fee_payment);
-
         let token_address = Address::generate(&env);
         let info = TokenInfo {
             address: token_address.clone(),
