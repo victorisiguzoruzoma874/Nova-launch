@@ -176,6 +176,10 @@ pub enum DataKey {
     TreasuryPolicy,
     WithdrawalPeriod,
     AllowedRecipient(Address),
+    // Stream management keys
+    StreamCount,                    // Total number of streams created
+    Stream(u32),                    // Stream info by ID
+    StreamByCreator(Address, u32),  // Index streams by creator for pagination
 }
 
 /// Contract error codes

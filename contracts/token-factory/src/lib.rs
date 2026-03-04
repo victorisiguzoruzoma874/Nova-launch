@@ -12,6 +12,13 @@ mod timelock;
 mod pagination;
 mod mint;
 mod treasury;
+mod stream_types;
+
+#[cfg(test)]
+mod stream_metadata_test;
+
+#[cfg(test)]
+mod stream_metadata_update_test;
 
 use soroban_sdk::{contract, contractimpl, Address, Env};
 use types::{Error, FactoryState, TokenInfo, TokenStats};
@@ -1725,6 +1732,122 @@ impl TokenFactory {
     /// ```
     pub fn is_allowed_recipient(env: Env, recipient: Address) -> bool {
         treasury::is_allowed_recipient(&env, &recipient)
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Stream Functions
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Update stream metadata (creator/admin only)
+    ///
+    /// Allows the stream creator or admin to update the metadata associated with
+    /// a stream. Only metadata is mutable post-creation; all financial terms
+    /// (amount, creator, recipient, schedule) remain immutable.
+    ///
+    /// This function enforces strict financial invariants to prevent any mutation
+    /// of critical stream parameters after creation.
+    ///
+    /// # Arguments
+    /// * `env` - The contract environment
+    /// * `stream_id` - ID of the stream to update
+    /// * `updater` - Address performing the update (must be creator or admin)
+    /// * `new_metadata` - New metadata value (None to clear, Some(string) to set)
+    ///
+    /// # Returns
+    /// Returns `Ok(())` on success
+    ///
+    /// # Errors
+    /// * `Error::TokenNotFound` - Stream with given ID does not exist
+    /// * `Error::Unauthorized` - Caller is not the stream creator or admin
+    /// * `Error::InvalidParameters` - New metadata is invalid (empty string or >512 chars)
+    /// * `Error::ContractPaused` - Contract is currently paused
+    ///
+    /// # Financial Invariants (Enforced)
+    /// The following stream parameters are immutable and cannot be changed:
+    /// - `amount` - Stream payment amount
+    /// - `creator` - Original stream creator
+    /// - `recipient` - Stream recipient address
+    /// - `created_at` - Stream creation timestamp
+    /// - `id` - Stream ID
+    ///
+    /// # Metadata Constraints
+    /// - Minimum length: 1 character (when present)
+    /// - Maximum length: 512 characters
+    /// - Empty strings: Rejected with `Error::InvalidParameters`
+    /// - None value: Allowed (clears metadata)
+    ///
+    /// # Examples
+    /// ```
+    /// // Update metadata with new label
+    /// factory.update_stream_metadata(
+    ///     &env,
+    ///     stream_id,
+    ///     &updater,
+    ///     Some(String::from_str(&env, "Updated label"))
+    /// )?;
+    ///
+    /// // Clear metadata
+    /// factory.update_stream_metadata(
+    ///     &env,
+    ///     stream_id,
+    ///     &updater,
+    ///     None
+    /// )?;
+    /// ```
+    ///
+    /// # Authorization
+    /// Only the original stream creator or the contract admin can update metadata.
+    /// The updater must authorize the transaction via `require_auth()`.
+    ///
+    /// # Events
+    /// Emits `stream_metadata_updated` event with:
+    /// - stream_id: The updated stream ID
+    /// - updater: Address that performed the update
+    /// - has_metadata: Whether metadata is now present (true) or cleared (false)
+    pub fn update_stream_metadata(
+        env: Env,
+        stream_id: u32,
+        updater: Address,
+        new_metadata: Option<String>,
+    ) -> Result<(), Error> {
+        // Require updater authorization
+        updater.require_auth();
+
+        // Early return if contract is paused
+        if storage::is_paused(&env) {
+            return Err(Error::ContractPaused);
+        }
+
+        // Get the stream
+        let mut stream = storage::get_stream(&env, stream_id)
+            .ok_or(Error::TokenNotFound)?;
+
+        // Verify authorization: only creator or admin can update
+        let admin = storage::get_admin(&env);
+        if updater != stream.creator && updater != admin {
+            return Err(Error::Unauthorized);
+        }
+
+        // Store original stream for invariant validation
+        let original_stream = stream.clone();
+
+        // Validate new metadata before applying
+        stream_types::validate_metadata(&new_metadata)?;
+
+        // Update metadata
+        stream.metadata = new_metadata.clone();
+
+        // Enforce financial invariants - ensure no financial terms changed
+        stream_types::validate_financial_invariants(&original_stream, &stream)?;
+
+        // Store updated stream
+        storage::set_stream(&env, stream_id, &stream);
+
+        // Emit metadata updated event
+        let has_metadata = new_metadata.is_some();
+        events::emit_stream_metadata_updated(&env, stream_id, &updater, has_metadata);
+
+        Ok(())
     }
 
 }

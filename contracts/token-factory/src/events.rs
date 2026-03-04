@@ -360,3 +360,63 @@ pub fn emit_treasury_policy_updated(env: &Env, daily_cap: i128, allowlist_enable
         (daily_cap, allowlist_enabled),
     );
 }
+
+/// Emit stream metadata updated event (v1)
+/// 
+/// **Schema Version**: 1
+/// **Event Name**: strm_md_v1
+/// 
+/// **Topics** (indexed):
+/// - Event name: "strm_md_v1"
+/// - stream_id: u32 - The stream ID being updated
+/// 
+/// **Payload** (non-indexed):
+/// - updater: Address - The address that updated the metadata (creator/admin)
+/// - has_metadata: bool - Whether metadata is now present (true) or cleared (false)
+/// 
+/// **Schema Stability**: This schema is immutable. Any changes require a new version.
+/// 
+/// Emitted when stream metadata is successfully updated
+pub fn emit_stream_metadata_updated(
+    env: &Env,
+    stream_id: u32,
+    updater: &Address,
+    has_metadata: bool,
+) {
+    env.events().publish(
+        (symbol_short!("strm_md_v1"), stream_id),
+        (updater, has_metadata),
+    );
+}
+
+/// Emit stream created event (v1)
+/// 
+/// **Schema Version**: 1
+/// **Event Name**: strm_crt_v1
+/// 
+/// **Topics** (indexed):
+/// - Event name: "strm_crt_v1"
+/// - stream_id: u32 - The newly created stream ID
+/// 
+/// **Payload** (non-indexed):
+/// - creator: Address - The stream creator
+/// - recipient: Address - The stream recipient
+/// - amount: i128 - The stream amount
+/// - has_metadata: bool - Whether metadata is present
+/// 
+/// **Schema Stability**: This schema is immutable. Any changes require a new version.
+/// 
+/// Emitted when a new stream is created
+pub fn emit_stream_created(
+    env: &Env,
+    stream_id: u32,
+    creator: &Address,
+    recipient: &Address,
+    amount: i128,
+    has_metadata: bool,
+) {
+    env.events().publish(
+        (symbol_short!("strm_crt_v1"), stream_id),
+        (creator, recipient, amount, has_metadata),
+    );
+}
