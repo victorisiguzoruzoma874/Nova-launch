@@ -427,7 +427,6 @@ pub fn emit_stream_metadata_updated(
         (updater, has_metadata),
     );
 }
-
 /// Emit metadata set event
 /// 
 /// **Event Name**: meta_set

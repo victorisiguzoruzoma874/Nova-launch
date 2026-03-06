@@ -98,6 +98,8 @@ pub struct TokenStats {
     pub burn_count: u32,
     pub is_paused: bool,
     pub has_clawback: bool,
+    pub clawback_enabled: bool,
+    pub freeze_enabled: bool,
 }
 
 /// Parameters for token creation in single/batch flows.
@@ -156,6 +158,8 @@ pub struct FeeUpdate {
 /// * `NextChangeId` - Next available change ID
 /// * `CreatorTokens(Address)` - Vector of token indices for a creator
 /// * `CreatorTokenCount(Address)` - Number of tokens created by address
+/// * `TokenStreams(u32)` - Vector of stream IDs for a token
+/// * `TokenStreamCount(u32)` - Number of streams for a token
 /// * `TreasuryPolicy` - Treasury withdrawal policy
 /// * `WithdrawalPeriod` - Current withdrawal period tracking
 /// * `AllowedRecipient(Address)` - Whether address is allowed recipient
@@ -179,6 +183,8 @@ pub enum DataKey {
     NextChangeId,
     CreatorTokens(Address),
     CreatorTokenCount(Address),
+    TokenStreams(u32),
+    TokenStreamCount(u32),
     TreasuryPolicy,
     WithdrawalPeriod,
     AllowedRecipient(Address),
@@ -260,12 +266,8 @@ pub enum Error {
     StreamNotFound = 29,
     StreamCancelled = 30,
     NothingToClaim = 31,
-    InvalidTimeWindow = 32,
-    PayloadTooLarge = 33,
-    ProposalNotFound = 34,
-    VotingNotStarted = 35,
-    VotingEnded = 36,
-    AlreadyVoted = 37,
+    CliffNotReached = 32,
+    InvalidSchedule = 33,  // Invalid time schedule (cliff outside valid bounds)
 }
 
 /// Type of pending change
@@ -451,6 +453,7 @@ pub struct StreamInfo {
     pub end_time: u64,
     pub cliff_time: u64,
     pub cancelled: bool,
+    pub paused: bool,
 }
 
 /// Stream creation parameters
