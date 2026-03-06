@@ -85,6 +85,7 @@ pub struct TokenInfo {
     pub metadata_uri: Option<String>,
     pub created_at: u64,
     pub is_paused: bool,
+    pub clawback_enabled: bool,
 }
 
 /// Compact read-only snapshot of a token's current state.
@@ -97,6 +98,8 @@ pub struct TokenStats {
     pub burn_count: u32,
     pub is_paused: bool,
     pub has_clawback: bool,
+    pub clawback_enabled: bool,
+    pub freeze_enabled: bool,
 }
 
 /// Batch fee update structure for Phase 2 optimization
@@ -243,6 +246,8 @@ pub enum Error {
     StreamNotFound = 29,
     StreamCancelled = 30,
     NothingToClaim = 31,
+    CliffNotReached = 32,
+    InvalidSchedule = 33,  // Invalid time schedule (cliff outside valid bounds)
 }
 
 /// Type of pending change
@@ -307,7 +312,7 @@ pub struct PaginationCursor {
 /// # Fields
 /// * `tokens` - Vector of token info for this page
 /// * `cursor` - Cursor for next page (None = no more results)
-// NOTE: Cannot be #[contracttype] because Option<PaginationCursor> is not serializable
+#[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PaginatedTokens {
     pub tokens: soroban_sdk::Vec<TokenInfo>,
