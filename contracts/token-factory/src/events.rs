@@ -715,123 +715,118 @@ pub fn emit_vault_cancelled(env: &Env, vault_id: u64, actor: &Address, remaining
     );
 }
 
-// ── Buyback Campaign Events (v1) ──────────────────────────────
-
-/// Emit buyback campaign created event (v1)
+/// Emit campaign created event
 ///
-/// Schema v1 fields (immutable):
-/// - version: u32 = 1
-/// - campaign_id: u32
-/// - creator: Address
-/// - token_index: u32
-/// - total_budget: i128
-/// - max_spend_per_step: i128
-pub fn emit_buyback_created_v1(
+/// **Event Name**: cmp_crt
+///
+/// **Topics** (indexed):
+/// - Event name: "cmp_crt"
+/// - campaign_id: u64 - The campaign identifier
+///
+/// **Payload** (non-indexed):
+/// - owner: Address - Campaign owner
+/// - token_index: u32 - Token being bought back
+/// - budget_allocated: i128 - Total budget in stroops
+///
+/// Emitted when a new buyback campaign is created
+pub fn emit_campaign_created(
     env: &Env,
-    campaign_id: u32,
-    creator: &Address,
+    campaign_id: u64,
+    owner: &Address,
     token_index: u32,
-    total_budget: i128,
-    max_spend_per_step: i128,
+    budget_allocated: i128,
 ) {
     env.events().publish(
-        (symbol_short!("bb_crt_v1"), campaign_id),
-        (1u32, creator.clone(), token_index, total_budget, max_spend_per_step),
+        (symbol_short!("cmp_crt"), campaign_id),
+        (owner, token_index, budget_allocated),
     );
 }
 
-/// Emit buyback executed event (v1)
+/// Emit campaign paused event (v1)
 ///
-/// Schema v1 fields (immutable):
-/// - version: u32 = 1
-/// - executor: Address
-/// - spent: i128
-/// - bought: i128
-/// - burned: i128
-pub fn emit_buyback_executed_v1(
-    env: &Env,
-    campaign_id: u32,
-    executor: &Address,
-    spent: i128,
-    bought: i128,
-    burned: i128,
-) {
-    env.events().publish(
-        (symbol_short!("bb_exc_v1"), campaign_id),
-        (1u32, executor.clone(), spent, bought, burned),
-    );
-}
-
-/// Emit buyback paused event (v1)
+/// **Schema Version**: 1
+/// **Event Name**: cmp_ps_v1
 ///
-/// Schema v1 fields (immutable):
-/// - version: u32 = 1
-/// - paused_by: Address
-pub fn emit_buyback_paused_v1(
-    env: &Env,
-    campaign_id: u32,
-    paused_by: &Address,
-) {
-    env.events().publish(
-        (symbol_short!("bb_pse_v1"), campaign_id),
-        (1u32, paused_by.clone()),
-    );
-}
-
-/// Emit buyback resumed event (v1)
+/// **Topics** (indexed):
+/// - Event name: "cmp_ps_v1"
+/// - campaign_id: u64 - The campaign identifier
 ///
-/// Schema v1 fields (immutable):
-/// - version: u32 = 1
-/// - resumed_by: Address
-pub fn emit_buyback_resumed_v1(
-    env: &Env,
-    campaign_id: u32,
-    resumed_by: &Address,
-) {
-    env.events().publish(
-        (symbol_short!("bb_rsm_v1"), campaign_id),
-        (1u32, resumed_by.clone()),
-    );
-}
-
-/// Emit buyback finalized event (v1)
+/// **Payload** (non-indexed):
+/// - paused_by: Address - Address that paused the campaign
 ///
-/// Schema v1 fields (immutable):
-/// - version: u32 = 1
-/// - finalized_by: Address
-/// - total_spent: i128
-/// - total_bought: i128
-/// - total_burned: i128
-/// - execution_count: u32
-pub fn emit_buyback_finalized_v1(
-    env: &Env,
-    campaign_id: u32,
-    finalized_by: &Address,
-    total_spent: i128,
-    total_bought: i128,
-    total_burned: i128,
-    execution_count: u32,
-) {
-    env.events().publish(
-        (symbol_short!("bb_fin_v1"), campaign_id),
-        (1u32, finalized_by.clone(), total_spent, total_bought, total_burned, execution_count),
-    );
-}
-
-/// Legacy buyback executed event (deprecated)
+/// **Schema Stability**: This schema is immutable. Any changes require a new version.
 ///
-/// Use emit_buyback_executed_v1 instead
-#[deprecated(note = "Use emit_buyback_executed_v1 for versioned schema")]
-pub fn emit_buyback_executed(
-    env: &Env,
-    campaign_id: u32,
-    executor: &Address,
-    spent: i128,
-    bought: i128,
-) {
+/// Emitted when a campaign is paused
+pub fn emit_campaign_paused(env: &Env, campaign_id: u64, paused_by: &Address) {
     env.events().publish(
-        (symbol_short!("bb_exec"), campaign_id),
-        (executor.clone(), spent, bought),
+        (symbol_short!("cmp_ps_v1"), campaign_id),
+        (paused_by,),
     );
 }
 
+/// Emit campaign resumed event (v1)
+///
+/// **Schema Version**: 1
+/// **Event Name**: cmp_rs_v1
+///
+/// **Topics** (indexed):
+/// - Event name: "cmp_rs_v1"
+/// - campaign_id: u64 - The campaign identifier
+///
+/// **Payload** (non-indexed):
+/// - resumed_by: Address - Address that resumed the campaign
+///
+/// **Schema Stability**: This schema is immutable. Any changes require a new version.
+///
+/// Emitted when a campaign is resumed from paused state
+pub fn emit_campaign_resumed(env: &Env, campaign_id: u64, resumed_by: &Address) {
+    env.events().publish(
+        (symbol_short!("cmp_rs_v1"), campaign_id),
+        (resumed_by,),
+    );
+}
+
+/// Emit campaign completed event
+///
+/// **Event Name**: cmp_cmp
+///
+/// **Topics** (indexed):
+/// - Event name: "cmp_cmp"
+/// - campaign_id: u64 - The campaign identifier
+///
+/// **Payload** (non-indexed):
+/// - tokens_burned: i128 - Total tokens burned
+/// - budget_spent: i128 - Total budget spent
+///
+/// Emitted when a campaign completes successfully
+pub fn emit_campaign_completed(env: &Env, campaign_id: u64, tokens_burned: i128, budget_spent: i128) {
+    env.events().publish(
+        (symbol_short!("cmp_cmp"), campaign_id),
+        (tokens_burned, budget_spent),
+    );
+}
+
+/// Emit campaign cancelled event
+///
+/// **Event Name**: cmp_cnl
+///
+/// **Topics** (indexed):
+/// - Event name: "cmp_cnl"
+/// - campaign_id: u64 - The campaign identifier
+///
+/// **Payload** (non-indexed):
+/// - cancelled_by: Address - Address that cancelled the campaign
+/// - budget_remaining: i128 - Unspent budget returned
+///
+/// Emitted when a campaign is cancelled
+pub fn emit_campaign_cancelled(
+    env: &Env,
+    campaign_id: u64,
+    cancelled_by: &Address,
+    budget_remaining: i128,
+) {
+    env.events().publish(
+        (symbol_short!("cmp_cnl"), campaign_id),
+        (cancelled_by, budget_remaining),
+    );
+}

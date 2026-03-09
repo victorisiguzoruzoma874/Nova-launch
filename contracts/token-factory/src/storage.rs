@@ -1284,77 +1284,105 @@ pub fn get_valid_proof(env: &Env, milestone_hash: &soroban_sdk::BytesN<32>) -> O
         .get(&key)
 }
 
-// ── Buyback Campaign Storage ──────────────────────────────
+// ============================================================
+// Storage Functions - Campaign Management
+// ============================================================
 
-/// Get buyback campaign by ID
-pub fn get_buyback_campaign(env: &Env, campaign_id: u32) -> Result<BuybackCampaign, Error> {
-    env.storage()
-        .persistent()
-        .get(&DataKey::BuybackCampaign(campaign_id))
-        .ok_or(Error::TokenNotFound)
-}
-
-/// Set buyback campaign
-pub fn set_buyback_campaign(env: &Env, campaign_id: u32, campaign: &BuybackCampaign) {
-    env.storage()
-        .persistent()
-        .set(&DataKey::BuybackCampaign(campaign_id), campaign);
-}
-
-/// Get buyback campaign count
-pub fn get_buyback_campaign_count(env: &Env) -> u32 {
+/// Get campaign by ID
+pub fn get_campaign(env: &Env, campaign_id: u64) -> Option<crate::types::BuybackCampaign> {
     env.storage()
         .instance()
-        .get(&DataKey::BuybackCampaignCount)
+        .get(&DataKey::Campaign(campaign_id))
+}
+
+/// Set campaign data
+pub fn set_campaign(env: &Env, campaign_id: u64, campaign: &crate::types::BuybackCampaign) {
+    env.storage()
+        .instance()
+        .set(&DataKey::Campaign(campaign_id), campaign);
+}
+
+/// Get total campaign count
+pub fn get_campaign_count(env: &Env) -> u64 {
+    env.storage()
+        .instance()
+        .get(&DataKey::CampaignCount)
         .unwrap_or(0)
 }
 
-/// Increment buyback campaign count
-pub fn increment_buyback_campaign_count(env: &Env) -> u32 {
-    let count = get_buyback_campaign_count(env) + 1;
+/// Increment campaign count and return new count
+pub fn increment_campaign_count(env: &Env) -> Result<u64, Error> {
+    let count = get_campaign_count(env)
+        .checked_add(1)
+        .ok_or(Error::ArithmeticError)?;
+    env.storage().instance().set(&DataKey::CampaignCount, &count);
+    Ok(count)
+}
+
+/// Get campaign ID by owner and index
+pub fn get_campaign_by_owner(env: &Env, owner: &Address, index: u32) -> Option<u64> {
     env.storage()
         .instance()
-        .set(&DataKey::BuybackCampaignCount, &count);
-    count
+        .get(&DataKey::CampaignByOwner(owner.clone(), index))
 }
 
-/// Get campaigns page with deterministic ordering (by campaign ID)
-pub fn get_campaigns_page(env: &Env, cursor: u32, limit: u32) -> soroban_sdk::Vec<BuybackCampaign> {
-    let max_limit = 50u32;
-    let page_limit = if limit > max_limit { max_limit } else { limit };
-    let total = get_buyback_campaign_count(env);
-    
-    let mut campaigns = soroban_sdk::Vec::new(env);
-    let mut current = cursor;
-    
-    while current < total && campaigns.len() < page_limit {
-        if let Ok(campaign) = get_buyback_campaign(env, current) {
-            campaigns.push_back(campaign);
-        }
-        current += 1;
+/// Set campaign ID for owner at index
+pub fn set_campaign_by_owner(env: &Env, owner: &Address, index: u32, campaign_id: u64) {
+    env.storage()
+        .instance()
+        .set(&DataKey::CampaignByOwner(owner.clone(), index), &campaign_id);
+}
+
+/// Get owner's campaign count
+pub fn get_owner_campaign_count(env: &Env, owner: &Address) -> u32 {
+    env.storage()
+        .instance()
+        .get(&DataKey::OwnerCampaignCount(owner.clone()))
+        .unwrap_or(0)
+}
+
+/// Increment owner's campaign count
+pub fn increment_owner_campaign_count(env: &Env, owner: &Address) -> Result<u32, Error> {
+    let count = get_owner_campaign_count(env, owner)
+        .checked_add(1)
+        .ok_or(Error::ArithmeticError)?;
+    env.storage()
+        .instance()
+        .set(&DataKey::OwnerCampaignCount(owner.clone()), &count);
+    Ok(count)
+}
+
+/// Get active campaign count
+pub fn get_active_campaign_count(env: &Env) -> u32 {
+    env.storage()
+        .instance()
+        .get(&DataKey::ActiveCampaignCount)
+        .unwrap_or(0)
+}
+
+/// Set active campaign count
+pub fn set_active_campaign_count(env: &Env, count: u32) {
+    env.storage()
+        .instance()
+        .set(&DataKey::ActiveCampaignCount, &count);
+}
+
+/// Increment active campaign count
+pub fn increment_active_campaign_count(env: &Env) -> Result<u32, Error> {
+    let count = get_active_campaign_count(env)
+        .checked_add(1)
+        .ok_or(Error::ArithmeticError)?;
+    set_active_campaign_count(env, count);
+    Ok(count)
+}
+
+/// Decrement active campaign count
+pub fn decrement_active_campaign_count(env: &Env) -> Result<u32, Error> {
+    let count = get_active_campaign_count(env);
+    if count == 0 {
+        return Err(Error::ArithmeticError);
     }
-    
-    campaigns
+    let new_count = count - 1;
+    set_active_campaign_count(env, new_count);
+    Ok(new_count)
 }
-
-/// Get campaigns by status (active/inactive)
-pub fn get_campaigns_by_status(env: &Env, active: bool, cursor: u32, limit: u32) -> soroban_sdk::Vec<BuybackCampaign> {
-    let max_limit = 50u32;
-    let page_limit = if limit > max_limit { max_limit } else { limit };
-    let total = get_buyback_campaign_count(env);
-    
-    let mut campaigns = soroban_sdk::Vec::new(env);
-    let mut current = cursor;
-    
-    while current < total && campaigns.len() < page_limit {
-        if let Ok(campaign) = get_buyback_campaign(env, current) {
-            if campaign.active == active {
-                campaigns.push_back(campaign);
-            }
-        }
-        current += 1;
-    }
-    
-    campaigns
-}
-
