@@ -6,6 +6,7 @@ mod freeze_functions;
 mod governance;
 
 mod burn;
+mod buyback;
 mod differential_engine;
 mod event_versions;
 mod events;
