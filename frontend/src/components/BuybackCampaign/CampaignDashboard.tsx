@@ -40,6 +40,8 @@ export const CampaignDashboard: React.FC<CampaignDashboardProps> = ({
 
   const handleStepError = (err: Error) => {
     console.error('Step execution failed:', err);
+    // Refresh to reconcile state from chain source of truth
+    fetchCampaign();
   };
 
   if (loading) {

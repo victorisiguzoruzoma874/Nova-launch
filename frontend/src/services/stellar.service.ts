@@ -244,7 +244,6 @@ export class StellarService {
       return false;
     }
   }
-}
 
   async fundTestAccount(publicKey: string): Promise<void> {
     try {
