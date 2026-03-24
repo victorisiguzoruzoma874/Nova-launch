@@ -5,6 +5,7 @@ import { PrismaClient } from "@prisma/client";
 import { GovernanceEventParser } from "./governanceEventParser";
 import governanceEventMapper from "./governanceEventMapper";
 import { TokenEventParser, RawTokenEvent } from "./tokenEventParser";
+import { EventCursorStore } from "./eventCursorStore";
 
 const HORIZON_URL =
   process.env.STELLAR_HORIZON_URL || "https://horizon-testnet.stellar.org";
@@ -30,11 +31,13 @@ export class StellarEventListener {
   private prisma: PrismaClient;
   private governanceParser: GovernanceEventParser;
   private tokenEventParser: TokenEventParser;
+  private cursorStore: EventCursorStore;
 
   constructor() {
     this.prisma = new PrismaClient();
     this.governanceParser = new GovernanceEventParser(this.prisma);
     this.tokenEventParser = new TokenEventParser(this.prisma);
+    this.cursorStore = new EventCursorStore(this.prisma);
   }
 
   /**
@@ -45,6 +48,10 @@ export class StellarEventListener {
       console.warn("Event listener is already running");
       return;
     }
+
+    // Load durable cursor before starting — resumes from last processed event
+    this.lastCursor = await this.cursorStore.load();
+    console.log(`Resuming from cursor: ${this.lastCursor ?? "origin"}`);
 
     this.isRunning = true;
     console.log("Starting Stellar event listener...");
@@ -104,6 +111,7 @@ export class StellarEventListener {
       for (const event of events) {
         await this.processEvent(event);
         this.lastCursor = event.paging_token;
+        await this.cursorStore.save(this.lastCursor);
       }
     } catch (error) {
       console.error("Error fetching events:", error);

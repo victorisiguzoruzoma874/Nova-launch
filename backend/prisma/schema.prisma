@@ -283,3 +283,12 @@ enum CampaignStatus {
   COMPLETED
   CANCELLED
 }
+
+/// Stores durable state for long-running backend services.
+/// Used by StellarEventListener to persist the last processed event cursor
+/// so it can resume correctly after restarts without missing or replaying events.
+model IntegrationState {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
