@@ -178,3 +178,29 @@ export interface RecurringPaymentFilters {
     tokenAddress?: string;
     search?: string;
 }
+
+// Stream and Vault Projection Types
+export interface StreamProjection {
+    id: string;
+    streamId: number;
+    creator: string;
+    recipient: string;
+    amount: string;
+    metadata?: string;
+    status: 'CREATED' | 'CLAIMED' | 'CANCELLED';
+    txHash: string;
+    createdAt: string;
+    claimedAt?: string;
+    cancelledAt?: string;
+}
+
+export interface StreamStats {
+    totalStreams: number;
+    activeStreams: number;
+    claimedVolume: string;
+    cancelledVolume: string;
+}
+
+export interface VaultProjection extends StreamProjection {
+    // Vaults are currently mapped to streams
+}
