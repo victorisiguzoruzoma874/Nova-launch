@@ -76,6 +76,50 @@ export const ErrorCode = {
     TIMEOUT_ERROR: 'TIMEOUT_ERROR',
     ACCOUNT_NOT_FOUND: 'ACCOUNT_NOT_FOUND',
     INVALID_SIGNATURE: 'INVALID_SIGNATURE',
+    NOT_IMPLEMENTED: 'NOT_IMPLEMENTED',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
+
+// Governance types (Issue #617)
+export type ProposalStatus = 'draft' | 'active' | 'passed' | 'failed' | 'executed' | 'cancelled';
+
+export interface GovernanceProposal {
+  id: string;
+  title: string;
+  description: string;
+  status: ProposalStatus;
+  creator: string;
+  createdAt: number;
+  votingEndsAt: number;
+  executedAt?: number;
+  votesFor: string;
+  votesAgainst: string;
+  voteCount: number;
+  voterCount: number;
+  threshold: string;
+  quorum: string;
+  payloadType: string;
+  payload: string;
+}
+
+export interface GovernanceVote {
+  id: string;
+  proposalId: string;
+  voter: string;
+  support: boolean;
+  weight: string;
+  txHash: string;
+  timestamp: number;
+}
+
+export interface GovernanceStats {
+  totalProposals: number;
+  activeProposals: number;
+  passedProposals: number;
+  failedProposals: number;
+  executedProposals: number;
+  totalVotes: string;
+  uniqueVoters: number;
+  participationRate: string;
+}

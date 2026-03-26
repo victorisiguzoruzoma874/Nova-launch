@@ -926,6 +926,3 @@ A: Base deployment is 7 XLM, with an additional 3 XLM for metadata.
 **Q: Which networks are supported?**  
 A: Both Stellar testnet (for testing) and mainnet (for production).
 
-### Technical
-
-**Q: Whi
